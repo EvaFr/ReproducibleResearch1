@@ -1,0 +1,141 @@
+---
+title: 'Peer-graded Assignment: Course Project 1'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Introduction
+
+  It is now possible to collect a large amount of data about personal movement using activity monitoring devices such as a Fitbit, Nike Fuelband, or Jawbone Up. These type of devices are part of the “quantified self” movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. But these data remain under-utilized both because the raw data are hard to obtain and there is a lack of statistical methods and software for processing and interpreting the data.
+
+  This assignment makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
+  
+### Dataset
+    The data for this assignment can be downloaded from the course web site:
+Dataset: [Activity monitoring data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip) [52K]
+
+The variables included in this dataset are:
+
+    steps: Number of steps taking in a 5-minute interval (missing values are coded as NA\color{red}{\verb|NA|}NA)
+
+    date: The date on which the measurement was taken in YYYY-MM-DD format
+
+    interval: Identifier for the 5-minute interval in which measurement was taken
+
+The dataset is stored in a comma-separated-value (CSV) file and there are a total of 17,568 observations in this dataset.
+
+### Loading and preprocessing the data
+```{r settings, echo = FALSE}
+library(knitr)
+library(ggplot2)
+library(data.table)
+setwd("/home/eva/R/ReproducibleResearch/CourseProject1")
+```
+
+
+```{r load data}
+actData <- read.csv("activity.csv", header = TRUE, sep = ",", quote = "\"")
+
+str(actData)
+
+```
+### The total number of steps taken per day
+```{r mean}
+aSum <- tapply(actData$steps, actData$date, sum, na.rm=T)
+hist(aSum, xlab = "Sum of steps per day", main = "Histogram of steps per day")
+```
+
+### The mean and median of the total number of steps taken per day
+```{r mean and median}
+aMean <- round(mean(aSum))
+aMed <- round(median(aSum))
+
+print(c("The mean is", aMean))
+print(c("The median is", aMed))
+```
+## Average daily activity pattern
+
+### 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+A time series plot (i.e. type = "l"\color{red}{\verb|type = "l"|}type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+```{r average steps}
+stepsMean <- tapply(actData$steps, actData$interval, mean, na.rm=T)
+plot(stepsMean ~ unique(actData$interval), type="l", xlab = "5-min interval")
+```
+
+### The maximum number of steps in 5-minute interval
+
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r maximum of steps}
+stepsMax <- tapply(actData$steps, actData$interval, max, na.rm=T)
+plot(stepsMax ~ unique(actData$interval), type="l", xlab = "5-min maximum")
+```
+
+## Imputing missing values
+
+Note that there are a number of days/intervals where there are missing values (coded as NA\color{red}{\verb|NA|}NA). The presence of missing days may introduce bias into some calculations or summaries of the data.
+
+### The total number of missing values in the dataset
+
+
+```{r number of missing values}
+table(is.na(actData) == TRUE)
+```
+
+### Strategy for filling in all of the missing values in the dataset
+
+
+The missing data is replacing by the mean of the current interval
+
+### Filled dataset
+
+
+```{r change with median}
+actDataS <- actData  
+for (i in 1:nrow(actData)){
+    if(is.na(actData$steps[i])){
+        actDataS$steps[i]<- stepsMean[[as.character(actData[i, "interval"])]]
+    }
+}
+```
+
+### The impact of imputing missing data on the estimates of the total daily number of steps
+
+These estimates values are not differ from the first part of the assignment
+
+```{r new dataset}
+aSum <- tapply(actData$steps, actData$date, sum, na.rm=T)
+aMean <- round(mean(aSum))
+aMed <- round(median(aSum))
+
+print(c("The mean is", aMean))
+print(c("The median is", aMed))
+hist(aSum, xlab = "Sum of steps per day", main = "Histogram of steps per day")
+```
+These estimates values are not differ from the first part of the assignment
+
+### Examination of weekdays or weekend days
+
+Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+```{r new column}
+    actDataS$date    <- as.Date(actDataS$date);
+    actDataS$weekend <- ifelse(weekdays(actDataS$date) %in% c("Saturday", "Sunday","szombat", "vasárnap", "Szombat", "Vasárnap",
+    "saturday", "sunday", "Szo", "szo"), "Weekend","Weekday")
+    actWeekend <- subset(actDataS, weekend == "Weekend")
+    actWeekday <- subset(actDataS, weekend == "Weekday")
+```
+
+
+
+
+```{r plot final data}
+   
+    plot(actWeekday$steps ~ actWeekday$interval,  col = "blue", main = "Weekday", ylab = "Interval", xlab = "Number of Steps", type = "l"  )
+    plot(actWeekend$steps ~ actWeekend$interval,  col = "blue", main = "Weekend", ylab = "Interval", xlab = "Number of Steps", type = "l"  )
+```
